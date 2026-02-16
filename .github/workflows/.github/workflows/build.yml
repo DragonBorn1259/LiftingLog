@@ -1,0 +1,50 @@
+name: Build Android APK
+on:
+  workflow_dispatch: 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Generate Build Environment
+        run: |
+          echo '{"name":"liftinglog","version":"1.0.0","scripts":{"build":"vite build"},"dependencies":{"react":"^18.2.0","react-dom":"^18.2.0","lucide-react":"^0.263.1","recharts":"^2.7.2","date-fns":"^2.30.0"},"devDependencies":{"vite":"^5.0.0","@vitejs/plugin-react":"^4.0.0","@capacitor/cli":"^5.0.0","@capacitor/core":"^5.0.0","@capacitor/android":"^5.0.0"}}' > package.json
+          echo 'import { defineConfig } from "vite"; import react from "@vitejs/plugin-react"; export default defineConfig({ plugins: [react()], build: { outDir: "dist" } });' > vite.config.js
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Compile React Code
+        run: npm run build
+
+      - name: Wrap into Android App
+        run: |
+          npx cap init LiftingLog com.dragonborn1259.liftinglog --web-dir dist
+          npx cap add android
+          npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Output APK File
+        uses: actions/upload-artifact@v4
+        with:
+          name: LiftingLog-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
