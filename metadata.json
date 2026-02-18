@@ -1,0 +1,5 @@
+{
+  "name": "LiftLog",
+  "description": "A production-ready workout planner and tracker featuring a calendar planner, custom workout builder, exercise library, cardio tracking, and progress analytics with an AMOLED-friendly dark mode.",
+  "requestFramePermissions": []
+}
