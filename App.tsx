@@ -48,7 +48,7 @@ type SubScreen =
   | { type: 'NONE' }
   | { type: 'WORKOUT_EDITOR'; date: string }
   | { type: 'ADD_EXERCISE'; date: string }
-  | { type: 'CREATE_CUSTOM_EXERCISE' };
+  | { type: 'CREATE_CUSTOM_EXERCISE'; date?: string };
 
 interface ConfirmationState {
   isOpen: boolean;
@@ -806,6 +806,21 @@ const App = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-2 pb-safe">
+                <button
+                    onClick={() => setSubScreen({ type: 'CREATE_CUSTOM_EXERCISE', date })}
+                    className="w-full text-left p-4 mb-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl flex items-center justify-between group transition-colors border border-dashed border-primary/30"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Plus size={18} />
+                        </div>
+                        <div>
+                            <div className="font-bold">Create Custom Exercise</div>
+                            <div className="text-xs opacity-70">Add something not in the list</div>
+                        </div>
+                    </div>
+                </button>
+
                 {filteredExercises.map((ex) => (
                     <button
                         key={ex.id}
@@ -831,10 +846,100 @@ const App = () => {
     );
   };
 
+  // 4. Custom Exercise Editor
+  const CustomExerciseEditor = ({ date }: { date?: string }) => {
+    const [name, setName] = useState('');
+    const [muscle, setMuscle] = useState<string>(MUSCLE_GROUPS[0]);
+    const [type, setType] = useState<'strength' | 'cardio'>('strength');
+
+    const handleSave = () => {
+      if (!name.trim()) return;
+      
+      const newEx: ExerciseDef = {
+        id: generateId(),
+        name: name.trim(),
+        muscleGroup: muscle as any,
+        type,
+        isCustom: true
+      };
+
+      setState(s => ({
+        ...s,
+        exercises: [...s.exercises, newEx]
+      }));
+
+      if (date) {
+        setSubScreen({ type: 'ADD_EXERCISE', date });
+      } else {
+        setSubScreen({ type: 'NONE' });
+      }
+    };
+
+    return (
+      <div className="h-full flex flex-col bg-white dark:bg-zinc-900 animate-in slide-in-from-bottom duration-200">
+        <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3">
+          <Button variant="ghost" className="!p-2" onClick={() => date ? setSubScreen({ type: 'ADD_EXERCISE', date }) : setSubScreen({ type: 'NONE' })}>
+            <ChevronLeft />
+          </Button>
+          <h2 className="text-lg font-bold dark:text-white">New Exercise</h2>
+        </div>
+
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-500">Exercise Name</label>
+            <Input 
+              placeholder="e.g. Diamond Pushups" 
+              value={name} 
+              onChange={e => setName(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-500">Muscle Group</label>
+            <div className="grid grid-cols-2 gap-2">
+              {MUSCLE_GROUPS.map(mg => (
+                <button
+                  key={mg}
+                  onClick={() => setMuscle(mg)}
+                  className={`p-3 rounded-xl text-sm font-medium border transition-all ${muscle === mg ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 dark:border-zinc-800 text-gray-500'}`}
+                >
+                  {mg}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-500">Exercise Type</label>
+            <div className="flex gap-2">
+              {(['strength', 'cardio'] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => setType(t)}
+                  className={`flex-1 p-3 rounded-xl text-sm font-medium border transition-all capitalize ${type === t ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 dark:border-zinc-800 text-gray-500'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-100 dark:border-zinc-800">
+          <Button className="w-full" onClick={handleSave} disabled={!name.trim()}>
+            Create Exercise
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   // --- Router ---
   const renderContent = () => {
     if (subScreen.type === 'WORKOUT_EDITOR') return <WorkoutEditor date={subScreen.date} />;
     if (subScreen.type === 'ADD_EXERCISE') return <ExerciseSelector date={subScreen.date} />;
+    if (subScreen.type === 'CREATE_CUSTOM_EXERCISE') return <CustomExerciseEditor date={subScreen.date} />;
     
     // Main Tabs
     switch (screen) {
